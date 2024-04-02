@@ -42,6 +42,8 @@ class DropConvBlock(nn.Module):
                  dropout_prob=0.0):
         super(DropConvBlock, self).__init__()
         self.use_dropout = (dropout_prob != 0.0)
+        self.skip_conv = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=1)  # Adjust dimensions if needed
+        self.skip_bn = nn.BatchNorm2d(64)
 
         self.conv = nn.Conv2d(
             in_channels=in_channels,
@@ -59,6 +61,7 @@ class DropConvBlock(nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         x = self.activ(x)
+        
         if self.use_dropout:
             x = self.dropout(x)
         return x
@@ -257,6 +260,12 @@ class FractalBlock(nn.Module):
             len_level_block_i = len(level_block_i._modules.values())
             for j in range(len_level_block_i):
                 outs[j] = joined_out
+                
+        residual = self.skip_conv(residual)
+        residual = self.skip_bn(residual)
+        
+        out += residual
+        out = self.relu(out)
 
         return outs[0]
 
